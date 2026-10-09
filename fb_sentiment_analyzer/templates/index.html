@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FB Sentiment AI Bot | NLTK Powered Facebook Intelligence</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        fbBlue: '#1877F2',
+                        fbHover: '#166fe5',
+                        darkCard: '#1e293b',
+                        darkBg: '#0f172a'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                    <i data-lucide="message-square-heart" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-300">
+                        FB Sentiment AI Bot
+                    </h1>
+                    <p class="text-xs text-slate-400">NLTK VADER Powered Topic Analyzer</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3 text-sm">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span> Engine Online
+                </span>
+                <button id="toggle-config-btn" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+        
+        <!-- Search & Quick Topics Bar -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="relative flex-1">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                    </div>
+                    <input type="text" id="search-topic" value="Bitcoin" placeholder="Enter topic or keyword (e.g. Bitcoin, AI, Stocks, Tesla)..."
+                        class="w-full pl-11 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-fbBlue focus:border-transparent text-slate-100 placeholder-slate-500 outline-none transition text-base">
+                </div>
+                <button id="analyze-btn" class="px-8 py-3.5 bg-fbBlue hover:bg-fbHover text-white font-semibold rounded-xl transition flex items-center justify-center space-x-2 shadow-lg shadow-blue-600/30">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    <span>Analyze Facebook Sentiment</span>
+                </button>
+            </div>
+
+            <!-- Quick Topic Chips -->
+            <div class="flex items-center space-x-2 text-xs overflow-x-auto pb-1 custom-scrollbar">
+                <span class="text-slate-400 font-medium whitespace-nowrap">Suggested Topics:</span>
+                <button class="topic-chip px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" data-topic="Bitcoin">🪙 Bitcoin</button>
+                <button class="topic-chip px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" data-topic="AI">🤖 Artificial Intelligence</button>
+                <button class="topic-chip px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" data-topic="Stocks">📊 Stocks & Markets</button>
+                <button class="topic-chip px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" data-topic="Metaverse">🌐 Metaverse</button>
+                <button class="topic-chip px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" data-topic="Electric Vehicles">⚡ Electric Vehicles</button>
+            </div>
+        </div>
+
+        <!-- Filter Parameters & Settings Panel (Collapsible / Customizable) -->
+        <div id="filter-panel" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                <h2 class="text-lg font-semibold flex items-center space-x-2 text-slate-200">
+                    <i data-lucide="sliders" class="w-5 h-5 text-fbBlue"></i>
+                    <span>Filtering Parameters & NLTK Settings</span>
+                </h2>
+                <span class="text-xs text-slate-400">Customize thresholds for FB data scan</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Min Likes -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                        Min. Likes
+                    </label>
+                    <div class="relative">
+                        <input type="number" id="min-likes" value="10" min="0" 
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-fbBlue outline-none">
+                        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400 text-xs">likes</div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">Filters posts below this like count (Default: 10)</p>
+                </div>
+
+                <!-- Min Shares / Reposts -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                        Min. Reposts / Shares
+                    </label>
+                    <div class="relative">
+                        <input type="number" id="min-shares" value="2" min="0" 
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-fbBlue outline-none">
+                        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400 text-xs">shares</div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">Filters posts with low viral reach (Default: 2)</p>
+                </div>
+
+                <!-- Reply Filter -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                        Filter Replies / Comments
+                    </label>
+                    <div class="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5">
+                        <span class="text-sm text-slate-300">Exclude Replies</span>
+                        <input type="checkbox" id="filter-replies" checked class="w-4 h-4 accent-fbBlue rounded cursor-pointer">
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">Ignore sub-replies to focus on main topic posts</p>
+                </div>
+
+                <!-- Post Language -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                        Post Language
+                    </label>
+                    <select id="post-language" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-fbBlue outline-none">
+                        <option value="en" selected>English Only</option>
+                        <option value="all">All Languages</option>
+                    </select>
+                    <p class="text-[11px] text-slate-500 mt-1">NLTK VADER performs best on English text</p>
+                </div>
+            </div>
+
+            <!-- Advanced Polarity & API Settings -->
+            <div class="mt-6 pt-4 border-t border-slate-800/60 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Polarity Filter & Threshold -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            Min. Polarity Intensity Threshold (|Compound Score|)
+                        </label>
+                        <span id="polarity-val" class="text-xs font-mono text-fbBlue font-bold">0.00</span>
+                    </div>
+                    <input type="range" id="min-polarity" min="0" max="0.8" step="0.05" value="0.0"
+                        class="w-full accent-fbBlue bg-slate-950 h-2 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[11px] text-slate-500">
+                        <span>All Tones (0.0)</span>
+                        <span>Strong Opinions Only (0.5+)</span>
+                    </div>
+                </div>
+
+                <!-- Optional FB Graph API Token -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                        FB Graph API User Access Token (Optional)
+                    </label>
+                    <input type="password" id="fb-token" placeholder="EAABw..." 
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-fbBlue outline-none">
+                    <p class="text-[11px] text-slate-500 mt-1">Leave blank to run in instant simulation mode without API limits!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Analytics Results (Hidden until search) -->
+        <div id="results-container" class="space-y-8">
+            
+            <!-- Summary KPI Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <!-- Tone Overview Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Overall Sentiment</p>
+                        <h3 id="overall-tone" class="text-2xl font-bold mt-1 text-emerald-400">Positive</h3>
+                        <p id="avg-compound-text" class="text-xs text-slate-500 mt-0.5">Avg Compound: +0.42</p>
+                    </div>
+                    <div id="overall-icon-bg" class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                        <i data-lucide="smile" class="w-7 h-7"></i>
+                    </div>
+                </div>
+
+                <!-- Total Posts Scanned -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Matched Posts</p>
+                        <h3 id="total-posts-count" class="text-2xl font-bold mt-1 text-slate-100">0</h3>
+                        <p id="filtered-out-text" class="text-xs text-slate-500 mt-0.5">Filtered out 0 posts</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                        <i data-lucide="filter" class="w-7 h-7"></i>
+                    </div>
+                </div>
+
+                <!-- Positive vs Negative Ratio -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Positive vs Negative</p>
+                        <h3 id="pos-neg-ratio" class="text-2xl font-bold mt-1 text-indigo-400">0% / 0%</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">NLTK classification</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                        <i data-lucide="pie-chart" class="w-7 h-7"></i>
+                    </div>
+                </div>
+
+                <!-- Total Likes & Shares -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Total Engagement</p>
+                        <h3 id="total-engagement" class="text-2xl font-bold mt-1 text-amber-400">0</h3>
+                        <p id="total-shares-text" class="text-xs text-slate-500 mt-0.5">0 Total Reposts / Shares</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                        <i data-lucide="thumbs-up" class="w-7 h-7"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Chart 1: Sentiment Distribution (Doughnut) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+                    <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center space-x-2">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-fbBlue"></i>
+                        <span>Sentiment Distribution Breakdown</span>
+                    </h3>
+                    <div class="relative w-full h-64 flex items-center justify-center">
+                        <canvas id="sentimentDoughnutChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                            <span class="block text-emerald-400 font-bold text-sm" id="pos-stat-pct">0%</span>
+                            <span class="text-slate-400">Positive</span>
+                        </div>
+                        <div class="p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                            <span class="block text-amber-400 font-bold text-sm" id="neu-stat-pct">0%</span>
+                            <span class="text-slate-400">Neutral</span>
+                        </div>
+                        <div class="p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                            <span class="block text-rose-400 font-bold text-sm" id="neg-stat-pct">0%</span>
+                            <span class="text-slate-400">Negative</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Polarity Score Bar Chart -->
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+                    <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center justify-between">
+                        <span class="flex items-center space-x-2">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-fbBlue"></i>
+                            <span>Post Engagement vs NLTK Polarity Score</span>
+                        </span>
+                        <span class="text-xs text-slate-400 font-normal">Likes & Shares vs Compound Polarity</span>
+                    </h3>
+                    <div class="relative w-full h-64">
+                        <canvas id="polarityBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtered Facebook Posts Feed / Table -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800 mb-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-100 flex items-center space-x-2">
+                            <i data-lucide="list-filter" class="w-5 h-5 text-fbBlue"></i>
+                            <span>Filtered Facebook Posts</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Posts matching your filter criteria (Min Likes: <span id="label-min-likes">10</span>, Min Shares: <span id="label-min-shares">2</span>)</p>
+                    </div>
+
+                    <!-- Filter pills -->
+                    <div class="flex items-center space-x-2 text-xs">
+                        <button class="post-filter-btn px-3 py-1.5 rounded-lg bg-fbBlue text-white font-medium transition" data-filter="all">All Posts</button>
+                        <button class="post-filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 transition" data-filter="positive">Positive</button>
+                        <button class="post-filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 transition" data-filter="neutral">Neutral</button>
+                        <button class="post-filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 transition" data-filter="negative">Negative</button>
+                    </div>
+                </div>
+
+                <!-- Posts List Container -->
+                <div id="posts-feed" class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    <!-- Dynamic Post Cards inserted here -->
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+        <p>FB Sentiment AI Bot • Powered by NLTK (Natural Language Toolkit) VADER & Facebook Graph API</p>
+    </footer>
+
+    <!-- Main JavaScript Application Logic -->
+    <script>
+        let doughnutChart = null;
+        let barChart = null;
+        let currentPostsData = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // Slider value listener
+            const minPolarityInput = document.getElementById('min-polarity');
+            const polarityValDisplay = document.getElementById('polarity-val');
+            minPolarityInput.addEventListener('input', (e) => {
+                polarityValDisplay.textContent = parseFloat(e.target.value).toFixed(2);
+            });
+
+            // Toggle Config Panel
+            document.getElementById('toggle-config-btn').addEventListener('click', () => {
+                const panel = document.getElementById('filter-panel');
+                panel.classList.toggle('hidden');
+            });
+
+            // Topic Chips listener
+            document.querySelectorAll('.topic-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    document.getElementById('search-topic').value = chip.getAttribute('data-topic');
+                    triggerAnalysis();
+                });
+            });
+
+            // Post Filter Buttons (All, Positive, Neutral, Negative)
+            document.querySelectorAll('.post-filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.post-filter-btn').forEach(b => {
+                        b.classList.remove('bg-fbBlue', 'text-white');
+                        b.classList.add('bg-slate-800', 'text-slate-300');
+                    });
+                    e.target.classList.remove('bg-slate-800', 'text-slate-300');
+                    e.target.classList.add('bg-fbBlue', 'text-white');
+
+                    const filterType = e.target.getAttribute('data-filter');
+                    renderPostsFeed(filterType);
+                });
+            });
+
+            // Search button listener
+            document.getElementById('analyze-btn').addEventListener('click', triggerAnalysis);
+
+            // Trigger initial scan for default topic "Bitcoin"
+            triggerAnalysis();
+        });
+
+        async function triggerAnalysis() {
+            const topic = document.getElementById('search-topic').value.trim();
+            if (!topic) {
+                alert('Please enter a topic to search');
+                return;
+            }
+
+            const analyzeBtn = document.getElementById('analyze-btn');
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i><span>Analyzing Tone...</span>`;
+            lucide.createIcons();
+
+            const minLikes = parseInt(document.getElementById('min-likes').value) || 0;
+            const minShares = parseInt(document.getElementById('min-shares').value) || 0;
+            const filterReplies = document.getElementById('filter-replies').checked;
+            const postLanguage = document.getElementById('post-language').value;
+            const minPolarity = parseFloat(document.getElementById('min-polarity').value);
+            const fbToken = document.getElementById('fb-token').value;
+
+            document.getElementById('label-min-likes').textContent = minLikes;
+            document.getElementById('label-min-shares').textContent = minShares;
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        topic: topic,
+                        min_likes: minLikes,
+                        min_shares: minShares,
+                        filter_replies: filterReplies,
+                        post_language: postLanguage,
+                        min_polarity: minPolarity,
+                        fb_access_token: fbToken
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                currentPostsData = data.posts || [];
+                updateSummaryKPIs(data.summary);
+                renderCharts(data.summary, currentPostsData);
+                renderPostsFeed('all');
+
+            } catch (err) {
+                console.error(err);
+                alert('Failed to connect to backend server');
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = `<i data-lucide="sparkles" class="w-5 h-5"></i><span>Analyze Facebook Sentiment</span>`;
+                lucide.createIcons();
+            }
+        }
+
+        function updateSummaryKPIs(summary) {
+            const toneElem = document.getElementById('overall-tone');
+            const iconBgElem = document.getElementById('overall-icon-bg');
+            const compoundElem = document.getElementById('avg-compound-text');
+
+            toneElem.textContent = summary.overall_tone;
+            compoundElem.textContent = `Avg Compound Score: ${summary.avg_compound_score > 0 ? '+' : ''}${summary.avg_compound_score}`;
+
+            if (summary.overall_tone === 'Positive') {
+                toneElem.className = 'text-2xl font-bold mt-1 text-emerald-400';
+                iconBgElem.className = 'w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400';
+                iconBgElem.innerHTML = `<i data-lucide="smile" class="w-7 h-7"></i>`;
+            } else if (summary.overall_tone === 'Negative') {
+                toneElem.className = 'text-2xl font-bold mt-1 text-rose-400';
+                iconBgElem.className = 'w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400';
+                iconBgElem.innerHTML = `<i data-lucide="frown" class="w-7 h-7"></i>`;
+            } else {
+                toneElem.className = 'text-2xl font-bold mt-1 text-amber-400';
+                iconBgElem.className = 'w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400';
+                iconBgElem.innerHTML = `<i data-lucide="meh" class="w-7 h-7"></i>`;
+            }
+
+            document.getElementById('total-posts-count').textContent = summary.matching_posts;
+            document.getElementById('filtered-out-text').textContent = `Filtered out ${summary.filtered_out} raw posts`;
+            document.getElementById('pos-neg-ratio').textContent = `${summary.positive_percentage}% / ${summary.negative_percentage}%`;
+            document.getElementById('total-engagement').textContent = summary.total_likes.toLocaleString();
+            document.getElementById('total-shares-text').textContent = `${summary.total_shares.toLocaleString()} Total Reposts / Shares`;
+
+            document.getElementById('pos-stat-pct').textContent = `${summary.positive_percentage}%`;
+            document.getElementById('neu-stat-pct').textContent = `${summary.neutral_percentage}%`;
+            document.getElementById('neg-stat-pct').textContent = `${summary.negative_percentage}%`;
+        }
+
+        function renderCharts(summary, posts) {
+            // 1. Doughnut Chart
+            const ctxDoughnut = document.getElementById('sentimentDoughnutChart').getContext('2d');
+            if (doughnutChart) doughnutChart.destroy();
+
+            doughnutChart = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Positive', 'Neutral', 'Negative'],
+                    datasets: [{
+                        data: [summary.positive_count, summary.neutral_count, summary.negative_count],
+                        backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
+                        borderWidth: 0,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 } } }
+                    },
+                    cutout: '72%'
+                }
+            });
+
+            // 2. Bar Chart (Top posts compound vs engagement)
+            const ctxBar = document.getElementById('polarityBarChart').getContext('2d');
+            if (barChart) barChart.destroy();
+
+            const topPosts = posts.slice(0, 10);
+            const labels = topPosts.map((p, idx) => `Post #${idx + 1}`);
+            const compoundScores = topPosts.map(p => p.sentiment.compound);
+            const likesData = topPosts.map(p => p.likes);
+
+            barChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'NLTK Compound Polarity (-1.0 to +1.0)',
+                            data: compoundScores,
+                            backgroundColor: compoundScores.map(val => val >= 0.05 ? '#10b981' : val <= -0.05 ? '#f43f5e' : '#f59e0b'),
+                            yAxisID: 'y',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Likes Count',
+                            data: likesData,
+                            backgroundColor: '#3b82f6',
+                            type: 'line',
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                        y: { 
+                            position: 'left',
+                            title: { display: true, text: 'Polarity Score', color: '#94a3b8' },
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: '#334155' },
+                            min: -1.0, max: 1.0
+                        },
+                        y1: {
+                            position: 'right',
+                            title: { display: true, text: 'Likes', color: '#94a3b8' },
+                            ticks: { color: '#94a3b8' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        function renderPostsFeed(filterType) {
+            const feedContainer = document.getElementById('posts-feed');
+            feedContainer.innerHTML = '';
+
+            let filtered = currentPostsData;
+            if (filterType !== 'all') {
+                filtered = currentPostsData.filter(p => p.sentiment.tone.toLowerCase() === filterType.toLowerCase());
+            }
+
+            if (filtered.length === 0) {
+                feedContainer.innerHTML = `
+                    <div class="text-center py-12 text-slate-500">
+                        <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        <p class="text-sm">No Facebook posts match the selected filter criteria.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            filtered.forEach(post => {
+                const s = post.sentiment;
+                let toneBadgeClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+                if (s.tone === 'Negative') toneBadgeClass = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+                if (s.tone === 'Neutral') toneBadgeClass = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+
+                const cardHtml = `
+                    <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-4 transition hover:border-slate-700">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center space-x-3">
+                                <img src="${post.author_avatar}" alt="Author" class="w-10 h-10 rounded-full border border-slate-800">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-slate-200">${post.author}</h4>
+                                    <span class="text-[11px] text-slate-500">${new Date(post.created_time).toLocaleString()}</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${toneBadgeClass}">
+                                    ${s.tone} (${s.compound > 0 ? '+' : ''}${s.compound})
+                                </span>
+                            </div>
+                        </div>
+
+                        <p class="text-sm text-slate-300 mt-3 leading-relaxed">${post.message}</p>
+
+                        <!-- Post Engagement & NLTK Details Footer -->
+                        <div class="mt-4 pt-3 border-t border-slate-900 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+                            <div class="flex items-center space-x-4">
+                                <span class="flex items-center space-x-1 text-blue-400">
+                                    <i data-lucide="thumbs-up" class="w-3.5 h-3.5"></i>
+                                    <span class="font-medium">${post.likes} likes</span>
+                                </span>
+                                <span class="flex items-center space-x-1 text-emerald-400">
+                                    <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                                    <span class="font-medium">${post.shares} reposts/shares</span>
+                                </span>
+                                <span class="flex items-center space-x-1 text-slate-400">
+                                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                                    <span>${post.comments_count} comments</span>
+                                </span>
+                            </div>
+
+                            <div class="flex items-center space-x-2 text-[11px] font-mono text-slate-500 bg-slate-900/90 px-2.5 py-1 rounded-md">
+                                <span>Pos: ${s.positive}</span> •
+                                <span>Neu: ${s.neutral}</span> •
+                                <span>Neg: ${s.negative}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                feedContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
